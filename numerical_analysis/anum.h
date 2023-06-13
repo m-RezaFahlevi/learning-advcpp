@@ -4,7 +4,7 @@
 namespace LinearAlgebra {
 	class Matrix {
 		int nrow, ncol;
-		double **mat;
+		double *pseudo_mat;
 		public:
 			Matrix(int, int);
 			Matrix(std::vector<double> v, int, int);
