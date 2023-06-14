@@ -24,7 +24,7 @@ double runif(double at_least, double at_most) {
 	return randu(generator);
 }
 
-LinearAlgebra::Matrix::Matrix(int nrows, int ncols) {
+LinearAlgebra::Matrix::Matrix(unsigned int nrows, unsigned int ncols) {
 	this->nrow = nrows;
 	this->ncol = ncols;
 	pseudo_mat = new double[nrow * ncol];
@@ -36,7 +36,7 @@ LinearAlgebra::Matrix::Matrix(int nrows, int ncols) {
 	}
 }
 
-LinearAlgebra::Matrix::Matrix(std::vector<double> v, int nrows, int ncols) {
+LinearAlgebra::Matrix::Matrix(std::vector<double> v, unsigned int nrows, unsigned int ncols) {
 	std::vector<double>::iterator v_itr = v.begin();
 	this->nrow = nrows;
 	this->ncol = ncols;
@@ -51,7 +51,56 @@ LinearAlgebra::Matrix::Matrix(std::vector<double> v, int nrows, int ncols) {
 }
 
 LinearAlgebra::Matrix::~Matrix() {
-	delete[] pseudo_mat;
+	pseudo_mat = nullptr;
+}
+
+
+LinearAlgebra::Matrix &LinearAlgebra::Matrix::operator =(const Matrix &param) {
+	this->nrow = param.nrow;
+	this->ncol = param.ncol;
+	this->pseudo_mat = param.pseudo_mat;
+	return *this;
+}
+
+double LinearAlgebra::Matrix::operator [](const unsigned int k) {
+	return pseudo_mat[k];
+}
+
+LinearAlgebra::Matrix LinearAlgebra::Matrix::operator +(const Matrix param) {
+	std::vector<double> c_vec;
+	int k = nrow * ncol;
+	for (int k_itr = 0; k_itr < k; k_itr++)
+		c_vec.push_back(pseudo_mat[k_itr] + param.pseudo_mat[k_itr]);
+	LinearAlgebra::Matrix C(c_vec, nrow, ncol);
+	return C;
+}
+
+LinearAlgebra::Matrix LinearAlgebra::Matrix::operator -(const Matrix param) {
+	std::vector<double> c_vec;
+	int k = nrow * ncol;
+	for (int k_itr = 0; k_itr < k; k_itr++)
+		c_vec.push_back(pseudo_mat[k_itr] - param.pseudo_mat[k_itr]);
+	LinearAlgebra::Matrix C(c_vec, nrow, ncol);
+	return C;
+}
+
+int LinearAlgebra::Matrix::get_nrow() {
+	return nrow;
+}
+
+int LinearAlgebra::Matrix::get_ncol() {
+	return ncol;
+}
+
+int *LinearAlgebra::Matrix::dim() {
+	int *dim_ptr = new int[2];
+	*dim_ptr = nrow; dim_ptr++;
+	*dim_ptr = ncol; dim_ptr--;
+	return dim_ptr;
+}
+
+double LinearAlgebra::Matrix::at(const unsigned int i, const unsigned int j) {
+	return pseudo_mat[i * ncol + j];
 }
 
 void LinearAlgebra::Matrix::print() {
