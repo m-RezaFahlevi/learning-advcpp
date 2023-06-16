@@ -84,6 +84,34 @@ LinearAlgebra::Matrix LinearAlgebra::Matrix::operator -(const Matrix param) {
 	return C;
 }
 
+LinearAlgebra::Matrix LinearAlgebra::Matrix::operator *(const Matrix param) {
+	std::vector<double> c_vec;
+	for (int row = 0; row < nrow; row++) {
+		for (int col = 0; col < ncol; col++) {
+			double c_el = 0;
+			for (int k = 0; k < nrow; k++) { // or k < param.ncol
+				int pseudo_matel = row * ncol + k; // A[i, k] is an element from matrix A
+				int param_matel = k * ncol + col; // B[k, j] is an element from matrix B
+				c_el += pseudo_mat[pseudo_matel] * param.pseudo_mat[param_matel];
+			}
+			c_vec.push_back(c_el);
+		}
+	}
+	LinearAlgebra::Matrix C(c_vec, nrow, param.ncol);
+	return C;
+}
+
+LinearAlgebra::Matrix LinearAlgebra::Matrix::operator *(const double scalar) {
+	int k = nrow * ncol;
+	double *mat_ptr = pseudo_mat;
+	for (int k_itr = 0; k_itr < k; k_itr++) {
+		*mat_ptr *= scalar;
+		mat_ptr++;
+	}
+	mat_ptr = nullptr;
+	return *this;
+}
+
 int LinearAlgebra::Matrix::get_nrow() {
 	return nrow;
 }
@@ -92,55 +120,79 @@ int LinearAlgebra::Matrix::get_ncol() {
 	return ncol;
 }
 
-int *LinearAlgebra::Matrix::dim() {
-	int *dim_ptr = new int[2];
-	*dim_ptr = nrow; dim_ptr++;
-	*dim_ptr = ncol; dim_ptr--;
-	return dim_ptr;
+double LinearAlgebra::Matrix::get_matel(const unsigned int i, const unsigned int j) {
+	int indice = i * ncol + j;
+	return pseudo_mat[indice];
+}
+
+void LinearAlgebra::Matrix::set_matel(const double val, const unsigned int i, const unsigned int j)
+{
+	int indice = i * ncol + j;
+	pseudo_mat[indice] = val;
 }
 
 double LinearAlgebra::Matrix::at(const unsigned int i, const unsigned int j) {
 	return pseudo_mat[i * ncol + j];
 }
 
-void LinearAlgebra::Matrix::print() {
-	for (int row = 0; row < nrow; row++) {
-		for (int col = 0; col < ncol; col++) {
-			int k = row * ncol + col;
-			std::cout << pseudo_mat[k] << " ";
-		}
-		std::cout << std::endl;
-	}
-}
-
-void LinearAlgebra::Matrix::println(std::string sentence) {
-	std::cout << sentence << std::endl;
-	for (int row = 0; row < nrow; row++) {
-		for (int col = 0; col < ncol; col++) {
-			int k = row * ncol + col;
-			std::cout << pseudo_mat[k] << " ";
-		}
-		std::cout << std::endl;
-	}
-}
-
-void LinearAlgebra::Matrix::forward_substitution(std::vector<double> b) {
+void LinearAlgebra::forward_substitution(Matrix A, std::vector<double> &b) {
+	Matrix *A_ptr = &A;
+	std::vector<double> *b_ptr = &b;
+	int nrow = A_ptr->get_nrow();
+	int ncol = A_ptr->get_ncol();
 	for (int pivot = 0; pivot < nrow; pivot++) {
-		int pivot_indice = pivot * ncol + pivot;
-		double scalar = 1 / pseudo_mat[pivot_indice];
-		b.at(pivot) = scalar * b.at(pivot);
+		double scalar = 1 / A_ptr->get_matel(pivot, pivot);
+		b_ptr->at(pivot) *= scalar;
 		for (int column = pivot; column < nrow; column++) {
-			int k = pivot * ncol + column;
-			pseudo_mat[k] = scalar * pseudo_mat[k];
+			double updated_val = scalar * A_ptr->get_matel(pivot, column);
+			A_ptr->set_matel(updated_val, pivot, column);
 		}
 		for (int row = pivot + 1; row < nrow; row++) {
-			int scalar_indice = row * ncol + pivot;
-			scalar = pseudo_mat[scalar_indice];
+			scalar = A_ptr->get_matel(row, pivot);
 			for (int column = pivot; column < nrow; column++) {
-				int matel_indice = row * ncol + column; // matrix element indice
-				pseudo_mat[matel_indice] = pseudo_mat[matel_indice]  - scalar * pseudo_mat[pivot * ncol + column];
+				double updated_val = A_ptr->get_matel(row, column) - scalar * A_ptr->get_matel(pivot, column);
+				A_ptr->set_matel(updated_val, row, column);
 			}
-			b.at(row) = b.at(row) - scalar * b.at(pivot);
+			b_ptr->at(row) = b_ptr->at(row) - scalar * b_ptr->at(pivot);
 		}
 	}
+	A_ptr = nullptr;
+	b_ptr = nullptr;
 }
+
+void println(std::vector<double> v_vec) {
+	for (double v_val: v_vec)
+		std::cout << v_val << std::endl;
+	std::cout << std::endl;
+}
+
+void println(std::vector<double> v_vec, std::string sentence) {
+	std::cout << sentence << std::endl;
+	for (double v_val: v_vec)
+		std::cout << v_val << std::endl;
+	std::cout << std::endl;
+}
+
+void println(LinearAlgebra::Matrix A) {
+	int nrow = A.get_nrow();
+	int ncol = A.get_ncol();
+	for (int row = 0; row < nrow; row++) {
+		for (int col = 0; col < ncol; col++) {
+			int k = row * ncol + col;
+			std::cout << A[k] << " ";
+		}
+		std::cout << std::endl;
+	}
+}
+
+void println(LinearAlgebra::Matrix A, std::string sentence) {
+	std::cout << sentence << std::endl;
+	int nrow = A.get_nrow();
+	int ncol = A.get_ncol();
+	for (int row = 0; row < nrow; row++) {
+		for(int col = 0; col < ncol; col++)
+			std::cout << A.at(row, col) << " ";
+		std::cout << std::endl;
+	}
+}
+
