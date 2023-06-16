@@ -160,6 +160,21 @@ void LinearAlgebra::forward_substitution(Matrix A, std::vector<double> &b) {
 	b_ptr = nullptr;
 }
 
+void LinearAlgebra::back_substitution(Matrix U, std::vector<double> &y) {
+	Matrix *U_ptr = &U;
+	std::vector<double> *y_ptr = &y;
+	int npivot = y_ptr->size();
+	for (int pivot = npivot - 1; pivot >= 0; pivot--) {
+		for (int row = pivot - 1; row >= 0; row--) {
+			double updated_val = U_ptr->get_matel(row, pivot) - (U_ptr->get_matel(row, pivot) * U_ptr->get_matel(pivot, pivot));
+			y_ptr->at(row) -= U_ptr->get_matel(row, pivot) * y_ptr->at(pivot);
+			U_ptr->set_matel(updated_val, row, pivot);
+		}
+	}
+	U_ptr = nullptr;
+	y_ptr = nullptr;
+}
+
 void println(std::vector<double> v_vec) {
 	for (double v_val: v_vec)
 		std::cout << v_val << std::endl;

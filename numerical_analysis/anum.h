@@ -22,6 +22,7 @@ namespace LinearAlgebra {
 			double at(const unsigned int i, const unsigned int j); // used only in fun
 	};
 	void forward_substitution(Matrix, std::vector<double>&);
+	void back_substitution(Matrix, std::vector<double>&);
 }
 
 void println(std::vector<double>);
