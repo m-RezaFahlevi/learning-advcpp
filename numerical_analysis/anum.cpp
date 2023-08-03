@@ -24,6 +24,12 @@ double runif(double at_least, double at_most) {
 	return randu(generator);
 }
 
+/* Constructor Matrix return a m x n identity matrix, i.e.,
+ * a matrix which its diagonal elements are one and the rest are zero.
+ * There are two parameters, nrows determine the number of row of
+ * a matrix and ncols determine the number of column of a matrix,
+ * nrows and ncols are positive integer >= 1
+ */
 LinearAlgebra::Matrix::Matrix(unsigned int nrows, unsigned int ncols) {
 	this->nrow = nrows;
 	this->ncol = ncols;
@@ -36,6 +42,12 @@ LinearAlgebra::Matrix::Matrix(unsigned int nrows, unsigned int ncols) {
 	}
 }
 
+/* Constructor Matrix for given vector v where the number of elements
+ * of v is m x n, return a m x n matrix where the elements are vector v.
+ * There are two parameters, nrows determine the number of row of a matrix
+ * and ncols determine the number of column of a matrix,
+ * nrows and ncols are positive integer >= 1
+ */
 LinearAlgebra::Matrix::Matrix(std::vector<double> v, unsigned int nrows, unsigned int ncols) {
 	std::vector<double>::iterator v_itr = v.begin();
 	this->nrow = nrows;
@@ -50,11 +62,14 @@ LinearAlgebra::Matrix::Matrix(std::vector<double> v, unsigned int nrows, unsigne
 	}
 }
 
+// Destructor of a Matrix
 LinearAlgebra::Matrix::~Matrix() {
 	pseudo_mat = nullptr;
 }
 
-
+// Assignment operator for a matrix
+// if A, B are matrix, then assignment operator enable us
+// to assign matrix B such that (for example) B = A * 2;
 LinearAlgebra::Matrix &LinearAlgebra::Matrix::operator =(const Matrix &param) {
 	this->nrow = param.nrow;
 	this->ncol = param.ncol;
@@ -62,10 +77,13 @@ LinearAlgebra::Matrix &LinearAlgebra::Matrix::operator =(const Matrix &param) {
 	return *this;
 }
 
+// Access element of pseudo matrix directly
 double LinearAlgebra::Matrix::operator [](const unsigned int k) {
 	return pseudo_mat[k];
 }
 
+// + : (R^(mxn),R^(mxn)) -> R^(mxn)
+// Enable us to perform matrix additon, return a new matrix
 LinearAlgebra::Matrix LinearAlgebra::Matrix::operator +(const Matrix param) {
 	std::vector<double> c_vec;
 	int k = nrow * ncol;
@@ -75,6 +93,8 @@ LinearAlgebra::Matrix LinearAlgebra::Matrix::operator +(const Matrix param) {
 	return C;
 }
 
+// - : (R^(mxn), R^(mxn)) -> R^(mxn)
+// Enable us to perform matrix substraction, return a new matrix
 LinearAlgebra::Matrix LinearAlgebra::Matrix::operator -(const Matrix param) {
 	std::vector<double> c_vec;
 	int k = nrow * ncol;
@@ -84,6 +104,8 @@ LinearAlgebra::Matrix LinearAlgebra::Matrix::operator -(const Matrix param) {
 	return C;
 }
 
+// * : (R^(mxn), R^(mxn)) -> R^(mxn)
+// Enable us to perform matrix multiplication, return a new matrix
 LinearAlgebra::Matrix LinearAlgebra::Matrix::operator *(const Matrix param) {
 	std::vector<double> c_vec;
 	for (int row = 0; row < nrow; row++) {
@@ -101,6 +123,8 @@ LinearAlgebra::Matrix LinearAlgebra::Matrix::operator *(const Matrix param) {
 	return C;
 }
 
+// * : (R^(mxn), R) -> R^(mxn)
+// Enable us to scale a matrix with scalar, i.e., post multiply matrix by scalar
 LinearAlgebra::Matrix LinearAlgebra::Matrix::operator *(const double scalar) {
 	int k = nrow * ncol;
 	double *mat_ptr = pseudo_mat;
@@ -112,29 +136,77 @@ LinearAlgebra::Matrix LinearAlgebra::Matrix::operator *(const double scalar) {
 	return *this;
 }
 
+// Return the number of row of a matrix
 int LinearAlgebra::Matrix::get_nrow() {
 	return nrow;
 }
 
+// Return the number of column of a matrix
 int LinearAlgebra::Matrix::get_ncol() {
 	return ncol;
 }
 
+// Get element of a matrix at row i and column j
 double LinearAlgebra::Matrix::get_matel(const unsigned int i, const unsigned int j) {
 	int indice = i * ncol + j;
 	return pseudo_mat[indice];
 }
 
+// Set element of a matrix at row i and column j by value val
 void LinearAlgebra::Matrix::set_matel(const double val, const unsigned int i, const unsigned int j)
 {
 	int indice = i * ncol + j;
 	pseudo_mat[indice] = val;
 }
 
+// Get element of a matrix at row i and column j
 double LinearAlgebra::Matrix::at(const unsigned int i, const unsigned int j) {
 	return pseudo_mat[i * ncol + j];
 }
 
+// Enable us to perform matrix transpose, return a new matrix
+LinearAlgebra::Matrix LinearAlgebra::transpose(Matrix A) {
+	Matrix *A_ptr = &A;
+	Matrix A_tr(A_ptr->get_ncol(), A_ptr->get_nrow());
+	int nrow = A_ptr->get_nrow();
+	int ncol = A_ptr->get_ncol();
+	for (int row = 0; row < nrow; row++) {
+		for (int col = 0; col < ncol; col++) {
+			double updated_val = A_ptr->get_matel(row, col);
+			A_tr.set_matel(updated_val, col, row);
+		}
+	}
+	return A_tr;
+}
+
+/* Perform forward_substitution to a matrix A, i.e.,
+ * decompose matrix into its upper-triangular form
+ */
+void LinearAlgebra::forward_substitution(Matrix A) {
+	Matrix *A_ptr = &A;
+	int nrow = A_ptr->get_nrow();
+	int ncol = A_ptr->get_ncol();
+	for (int pivot = 0; pivot < nrow; pivot++) {
+		double scalar = 1 / A_ptr->get_matel(pivot, pivot);
+		for (int column = pivot; column < nrow; column++) {
+			double updated_val = scalar * A_ptr->get_matel(pivot, column);
+			A_ptr->set_matel(updated_val, pivot, column);
+		}
+		for (int row = pivot + 1; row < nrow; row++) {
+			scalar = A_ptr->get_matel(row, pivot);
+			for (int column = pivot; column < nrow; column++) {
+				double updated_val = A_ptr->get_matel(row, column) - scalar * A_ptr->get_matel(pivot, column);
+				A_ptr->set_matel(updated_val, row, column);
+			}
+		}
+	}
+	A_ptr = nullptr;
+}
+
+/* Perform forward subtitution to a matrix in a linear equation
+ * Ax = b, where A is a matrix, x and b are vector of the same dimentions,
+ * decompose matrix A into its upper-triangular form, vector b also affected
+ */
 void LinearAlgebra::forward_substitution(Matrix A, std::vector<double> &b) {
 	Matrix *A_ptr = &A;
 	std::vector<double> *b_ptr = &b;
@@ -160,6 +232,25 @@ void LinearAlgebra::forward_substitution(Matrix A, std::vector<double> &b) {
 	b_ptr = nullptr;
 }
 
+/* Performing back_substitution for given upper-triangular matrix after
+ * performing forward_substitution, it will transform any upper-triangular
+ * matrix into an identity matrix
+ */
+void LinearAlgebra::back_substitution(Matrix U) {
+	Matrix *U_ptr = &U;
+	int npivot = U_ptr->get_ncol() > U_ptr->get_nrow() ? U_ptr->get_nrow() : U_ptr->get_ncol();
+	for (int pivot = npivot - 1; pivot >= 0; pivot--) {
+		for (int row = pivot - 1; row >= 0; row--) {
+			double updated_val = U_ptr->get_matel(row, pivot) - (U_ptr->get_matel(row, pivot) * U_ptr->get_matel(pivot, pivot));
+			U_ptr->set_matel(updated_val, row, pivot);
+		}
+	}
+	U_ptr = nullptr;
+}
+
+/* Performing back_substitution for upper-triangular matrix U in
+ * a linear equation Uy = b where y and b are vector
+ */
 void LinearAlgebra::back_substitution(Matrix U, std::vector<double> &y) {
 	Matrix *U_ptr = &U;
 	std::vector<double> *y_ptr = &y;
@@ -173,6 +264,65 @@ void LinearAlgebra::back_substitution(Matrix U, std::vector<double> &y) {
 	}
 	U_ptr = nullptr;
 	y_ptr = nullptr;
+}
+
+// still in debugging proccess...
+void LinearAlgebra::solve(Matrix A) {
+	Matrix *A_ptr = &A;
+	int nrow = A_ptr->get_nrow();
+	int ncol = A_ptr->get_ncol();
+	Matrix *A_inv = new Matrix(nrow, ncol); // new identity matrix
+	// compute the forward substitution
+	for (int pivot = 0; pivot < nrow; pivot++) {
+		double scalar = 1 / A_ptr->get_matel(pivot, pivot);
+		for (int column = pivot; column < nrow; column++) {
+			double updated_val = scalar * A_ptr->get_matel(pivot, column);
+			double updated_inv = scalar * A_inv->get_matel(pivot, column);
+			A_ptr->set_matel(updated_val, pivot, column);
+			A_inv->set_matel(updated_inv, pivot, column);
+		}
+		for (int row = pivot + 1; row < nrow; row++) {
+			scalar = A_ptr->get_matel(row, pivot);
+			for (int column = pivot; column < nrow; column++) {
+				double updated_val = A_ptr->get_matel(row, column) - scalar * A_ptr->get_matel(pivot, column);
+				double updated_inv = A_inv->get_matel(row, column) - scalar * A_inv->get_matel(pivot, column);
+				A_ptr->set_matel(updated_val, row, column);
+				A_inv->set_matel(updated_inv, row, column);
+			}
+		}
+	}
+	// compute the back substitution
+	for (int pivot = nrow- 1; pivot >= 0; pivot--) {
+		for (int row = pivot - 1; row >= 0; row--) {
+			double updated_val = A_ptr->get_matel(row, pivot) - (A_ptr->get_matel(row, pivot) * A_ptr->get_matel(pivot, pivot));
+			double updated_inv = A_inv->get_matel(row, pivot) - (A_inv->get_matel(row, pivot) * A_ptr->get_matel(pivot, pivot));
+			A_ptr->set_matel(updated_val, row, pivot);
+			A_inv->set_matel(updated_inv, row, pivot);
+		}
+	}
+	// update element of pseudo matrix
+	for (int row = 0; row < nrow; row++) {
+		for (int column = 0; column < ncol; column++) {
+			double updated_inv = A_inv->get_matel(row, column);
+			A_ptr->set_matel(updated_inv, row, column);
+		}
+	}
+}
+
+void LinearAlgebra::lu_factcomp(Matrix A) {
+	LinearAlgebra::Matrix *A_ptr = &A;
+	int N = A_ptr->get_nrow() * A_ptr->get_ncol();
+	for (int pivot = 0; pivot < N-1; pivot++) {
+		for (int row = pivot + 1; row < N - 1; row++) {
+			double scalar = - A_ptr->get_matel(row, pivot) / A_ptr->get_matel(pivot, pivot);
+			A_ptr->set_matel(scalar, row, pivot);
+			for (int column = pivot + 1; column < N - 1; column++) {
+				double updated_val = A_ptr->get_matel(row, column) + (scalar * A_ptr->get_matel(pivot, column));
+				A_ptr->set_matel(updated_val, row, column);
+			}
+		}
+	}
+	A_ptr = nullptr;
 }
 
 void println(std::vector<double> v_vec) {
